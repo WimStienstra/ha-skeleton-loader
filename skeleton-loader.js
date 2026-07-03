@@ -30,7 +30,7 @@
 const CONFIG = {
   // Custom card tag names to wrap. Empty by default for safety - you opt in
   // per card. Example: ["bubble-card", "simple-tabs-card", "apexcharts-card"]
-  allowTags: [],
+  allowTags: ["bubble-card", "simple-tabs-card", "apexcharts-card"],
 
   // Fallback skeleton height (px) used the first time a card/config combo is
   // ever seen (no cached measurement yet).
