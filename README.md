@@ -37,7 +37,8 @@ try to win a race to run before every other card's script. Instead:
    - The real card class is registered under a shadow tag, `real-<tag>`.
    - A lightweight wrapper element is registered under the original tag name.
      The wrapper immediately shows a shimmer sized from a cached height
-     (`localStorage`), creates the real `real-<tag>` element off-view, waits
+     (`localStorage`), mounts the real `real-<tag>` element inside the wrapper's
+     shadow DOM (hidden via opacity until its size stabilizes), waits
      for its size to stabilize (`ResizeObserver` + debounce + a max-wait
      safety cap), caches the stable height/`getCardSize()`, then reveals the
      real card.

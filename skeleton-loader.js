@@ -13,7 +13,7 @@
  *     1. Registers the real card class under a shadow tag `real-<tag>`.
  *     2. Registers a lightweight wrapper element under the original tag name that:
  *        - immediately reserves space using a cached height (shimmer skeleton),
- *        - creates the real `real-<tag>` element off-screen,
+ *        - mounts the real `real-<tag>` element in the wrapper (hidden via opacity until its size stabilizes),
  *        - waits for its size to stabilize (ResizeObserver + debounce + max-wait),
  *        - caches the stable size, then reveals the real card.
  *   Cards whose own `define()` call races ahead of this patch simply render normally
@@ -124,9 +124,12 @@ function ensureShimmerStyle(shadowRoot) {
   style.textContent = `
     :host {
       display: block;
+      position: relative;
       overflow: hidden;
     }
     .ha-skeleton {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       min-height: inherit;
@@ -139,6 +142,11 @@ function ensureShimmerStyle(shadowRoot) {
       );
       background-size: 200% 100%;
       animation: ha-skeleton-sweep ${CONFIG.shimmer.speedMs}ms ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ha-skeleton {
+        animation: none;
+      }
     }
     @keyframes ha-skeleton-sweep {
       0% { background-position: 200% 0; }
@@ -245,13 +253,21 @@ function createWrapperClass(tag, RealClass) {
     }
 
     disconnectedCallback() {
+      this._cleanupObservers();
+    }
+
+    _cleanupObservers() {
       this._resizeObserver?.disconnect();
+      this._resizeObserver = null;
       clearTimeout(this._stabilizeTimer);
+      this._stabilizeTimer = null;
       clearTimeout(this._maxWaitTimer);
+      this._maxWaitTimer = null;
     }
 
     // Edit-mode / editor preview: render the real card directly, no skeleton.
     _renderBypass() {
+      this._cleanupObservers();
       this._bypassed = true;
       this.shadowRoot.innerHTML = "";
       this._realCard = document.createElement(realTag);
@@ -266,6 +282,8 @@ function createWrapperClass(tag, RealClass) {
     }
 
     _render() {
+      this._cleanupObservers();
+      this._bypassed = false;
       this.shadowRoot.innerHTML = "";
       if (!shimmerStyleInjected) {
         // Style is injected per-instance (shadow roots don't share styles),
@@ -325,7 +343,7 @@ function createWrapperClass(tag, RealClass) {
         }
         writeCache(this._cacheKey, { heightPx: finalHeight, cardSize });
 
-        this.style.minHeight = `${finalHeight}px`;
+        this.style.minHeight = "";
         this._skeletonEl.remove();
         this._realWrap.classList.add("ha-skeleton-revealed");
         this._revealed = true;
@@ -362,7 +380,7 @@ function createWrapperClass(tag, RealClass) {
   const originalDefine = customElements.define.bind(customElements);
 
   customElements.define = function patchedDefine(tag, ctor, options) {
-    if (!CONFIG.allowTags.includes(tag) || customElements.get(tag)) {
+    if (!CONFIG.allowTags.includes(tag) || customElements.get(tag) || options?.extends) {
       return originalDefine(tag, ctor, options);
     }
 
