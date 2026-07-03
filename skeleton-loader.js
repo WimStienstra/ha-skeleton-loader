@@ -61,8 +61,19 @@ const CONFIG = {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+const VERSION = "0.1.0";
 const LOG_PREFIX = "[ha-skeleton-loader]";
 const CACHE_PREFIX = `ha-skeleton-loader:v${CONFIG.cacheVersion}:`;
+
+/** Styled console badge, matching the "NAME + version chip" banners other HA cards print. */
+function printBadge(label, value, color) {
+  console.info(
+    `%c ${label} %c ${value} %c`,
+    `background:${color};color:#fff;font-weight:700;border-radius:3px 0 0 3px;padding:2px 6px;`,
+    `background:#2b2b2b;color:#fff;border-radius:0 3px 3px 0;padding:2px 6px;`,
+    `background:transparent;`
+  );
+}
 
 /** Stable JSON.stringify (sorted keys) so cache keys don't depend on key order. */
 function stableStringify(value) {
@@ -354,7 +365,7 @@ function createWrapperClass(tag, RealClass) {
       // ...and a lightweight wrapper under the original name.
       const WrapperClass = createWrapperClass(tag, ctor);
       originalDefine(tag, WrapperClass);
-      console.info(`${LOG_PREFIX} wrapping <${tag}> with skeleton loader`);
+      printBadge("SKELETON-LOADER", `wrapping <${tag}>`, "#7b5cf0");
     } catch (err) {
       console.error(`${LOG_PREFIX} failed to wrap <${tag}>, falling back to normal registration`, err);
       // Best-effort fallback: register the card normally so it still works.
@@ -364,5 +375,13 @@ function createWrapperClass(tag, RealClass) {
     }
   };
 
-  console.info(`${LOG_PREFIX} installed (allow-listed tags: ${CONFIG.allowTags.join(", ") || "none configured"})`);
+  printBadge("SKELETON-LOADER", `v${VERSION}`, "#03a9f4");
+  if (CONFIG.allowTags.length === 0) {
+    console.warn(
+      `${LOG_PREFIX} loaded, but allowTags is empty - no cards will be wrapped. ` +
+        `Edit the CONFIG.allowTags array in skeleton-loader.js to opt in card tags.`
+    );
+  } else {
+    console.info(`${LOG_PREFIX} watching for: ${CONFIG.allowTags.join(", ")}`);
+  }
 })();
