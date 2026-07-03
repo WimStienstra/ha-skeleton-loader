@@ -61,7 +61,7 @@ const CONFIG = {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 const LOG_PREFIX = "[ha-skeleton-loader]";
 const CACHE_PREFIX = `ha-skeleton-loader:v${CONFIG.cacheVersion}:`;
 
