@@ -255,9 +255,14 @@ function createWrapperClass(tag, RealClass) {
       this._bypassed = true;
       this.shadowRoot.innerHTML = "";
       this._realCard = document.createElement(realTag);
-      if (this._hass) this._realCard.hass = this._hass;
       this._realCard.setConfig(this._config);
+      // Insert into the DOM before assigning `hass` - some cards subscribe to
+      // websocket events (history, logbook, etc.) as soon as `hass` is set,
+      // and doing that while still detached can lead to duplicate/orphaned
+      // subscriptions (observed as "Subscription not found" errors). Setting
+      // hass after connection mirrors how Lovelace itself sequences this.
       this.shadowRoot.appendChild(this._realCard);
+      if (this._hass) this._realCard.hass = this._hass;
     }
 
     _render() {
@@ -283,7 +288,6 @@ function createWrapperClass(tag, RealClass) {
       this._realWrap.className = "ha-skeleton-real-wrap";
 
       this._realCard = document.createElement(realTag);
-      if (this._hass) this._realCard.hass = this._hass;
       try {
         this._realCard.setConfig(this._config);
       } catch (err) {
@@ -291,6 +295,9 @@ function createWrapperClass(tag, RealClass) {
       }
       this._realWrap.appendChild(this._realCard);
       this.shadowRoot.appendChild(this._realWrap);
+      // Assign hass only after the real card is connected to the DOM (see
+      // note in _renderBypass for why ordering matters here).
+      if (this._hass) this._realCard.hass = this._hass;
 
       this._observeStabilization(heightPx);
     }
